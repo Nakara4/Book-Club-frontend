@@ -1,16 +1,17 @@
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
-import Home from './components/pages/Home';
-import Signup from './components/auth/Signup';
-import Login from './components/auth/Login';
+import Navigation from './components/common/Navigation';
+import Breadcrumb from './components/common/Breadcrumb';
+import AppRouter from './routes/AppRouter';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/login" element={<Login />} />
-    </Routes>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <Breadcrumb />
+      <main>
+        <AppRouter />
+      </main>
+    </div>
   );
 }
 
