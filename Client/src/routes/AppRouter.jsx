@@ -101,7 +101,7 @@ const AppRouter = () => {
           } 
         />
 
-        {/* Book club routes - all protected */}
+        {/* Book club routes - all protected and nested under BookClubLayout */}
         <Route 
           path="/bookclubs" 
           element={
@@ -117,13 +117,15 @@ const AppRouter = () => {
           <Route path="search" element={<BookClubList />} />
           <Route path="discover" element={<BookClubList />} />
           
-          {/* Individual book club routes */}
-          <Route path=":id" element={<BookClubDetail />} />
-          <Route path=":id/edit" element={<BookClubEdit />} />
-          <Route path=":id/members" element={<BookClubMembers />} />
-          <Route path=":id/discussions" element={<BookClubDiscussions />} />
-          <Route path=":id/books" element={<BookClubBooks />} />
-          <Route path=":id/invite" element={<BookClubInvite />} />
+          {/* Individual book club routes - nested under their own parent route */}
+          <Route path=":id">
+            <Route index element={<BookClubDetail />} />
+            <Route path="edit" element={<BookClubEdit />} />
+            <Route path="members" element={<BookClubMembers />} />
+            <Route path="discussions" element={<BookClubDiscussions />} />
+            <Route path="books" element={<BookClubBooks />} />
+            <Route path="invite" element={<BookClubInvite />} />
+          </Route>
         </Route>
 
         {/* Redirect old routes to new structure */}

@@ -8,7 +8,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <Breadcrumb />
-      <main>
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
         <AppRouter />
       </main>
     </div>

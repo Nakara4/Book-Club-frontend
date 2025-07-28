@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 class ApiService {
   constructor() {
@@ -64,12 +64,15 @@ class ApiService {
 
   // Login user
   async login(credentials) {
-    const response = await fetch(`${this.baseURL}/auth/login/`, {
+    const response = await fetch(`${this.baseURL}/token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({
+        username: credentials.email,  // your Django endpoint expects username
+        password: credentials.password
+      }),
     });
 
     const data = await this.handleResponse(response);

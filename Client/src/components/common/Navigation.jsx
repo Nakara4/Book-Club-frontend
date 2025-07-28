@@ -24,16 +24,16 @@ const Navigation = () => {
   ];
 
   return (
-    <nav className="bg-white shadow-lg">
+    <nav className="bg-white shadow-soft">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex flex-col md:flex-row justify-between items-center py-4 md:py-6 space-y-4 md:space-y-0">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-blue-600">
+          <Link to="/" className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent hover:opacity-90 transition-opacity">
             BookClub
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6 w-full md:w-auto">
             {navItems.map((item) => {
               if (item.authRequired && !isAuthenticated) return null;
               
@@ -41,9 +41,9 @@ const Navigation = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`text-gray-700 hover:text-blue-600 transition duration-300 ${
+                  className={`text-gray-700 hover:text-primary-600 font-medium transition duration-300 ${
                     location.pathname === item.path
-                      ? 'font-semibold text-blue-600'
+                      ? 'font-semibold text-primary-600'
                       : ''
                   }`}
                 >
@@ -54,30 +54,33 @@ const Navigation = () => {
 
             {/* Auth Links */}
             {!isAuthenticated ? (
-              <>
+              <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-blue-600 transition duration-300"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition duration-300 w-full md:w-auto text-center"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-300"
+                  className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium shadow-soft hover:shadow-md transition duration-300 w-full md:w-auto text-center"
                 >
                   Sign Up
                 </Link>
-              </>
+              </div>
             ) : (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">
-                  Welcome, {currentUser?.first_name || currentUser?.username}!
+              <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                <span className="text-gray-700 font-medium bg-gray-50 px-4 py-2 rounded-lg text-sm md:text-base text-center">
+                  Welcome, {currentUser?.first_name || currentUser?.username}! 👋
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="text-gray-700 hover:text-red-600 transition duration-300"
+                  className="text-gray-600 hover:text-red-600 font-medium transition duration-300 flex items-center space-x-1"
                 >
-                  Logout
+                  <span>Logout</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7z" clipRule="evenodd" />
+                  </svg>
                 </button>
               </div>
             )}

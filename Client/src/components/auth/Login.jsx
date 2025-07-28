@@ -63,13 +63,13 @@ const Login = () => {
         password: formData.password
       });
       
-      console.log('Login successful:', response);
+      // Store tokens
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
       
-      // Show success message
-      alert('Login successful!');
-      
-      // Redirect to home or dashboard
-      navigate('/');
+      // Redirect to the originally requested page or dashboard
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
       
     } catch (error) {
       console.error('Login error:', error);
