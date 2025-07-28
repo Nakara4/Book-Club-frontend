@@ -1,17 +1,27 @@
 import React from 'react';
+import { HelmetProvider } from 'react-helmet-async';
+import { ThemeProvider } from './contexts/EnhancedThemeContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Navigation from './components/common/Navigation';
+import Footer from './components/common/Footer';
 import Breadcrumb from './components/common/Breadcrumb';
 import AppRouter from './routes/AppRouter';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <Breadcrumb />
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-        <AppRouter />
-      </main>
-    </div>
+    <HelmetProvider>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-primary-50 dark:from-neutral-900 dark:to-primary-900 transition-colors duration-200">
+            <Navigation />
+            <main className="flex-1">
+              <AppRouter />
+            </main>
+            <Footer />
+          </div>
+        </ErrorBoundary>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }
 

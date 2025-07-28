@@ -3,9 +3,12 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../components/pages/Home';
 import Signup from '../components/auth/Signup';
 import Login from '../components/auth/Login';
+import AdminDashboard from '../components/AdminDashboard';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import AuthRedirect from '../components/common/AuthRedirect';
 import BookClubLayout from '../components/bookclubs/BookClubLayout';
 import { BookClubList, CreateBookClub, BookClubDetail } from '../components/bookclubs';
+import apiService from '../services/api';
 
 // Lazy load future components
 const BookClubEdit = React.lazy(() => 
@@ -78,8 +81,16 @@ const AppRouter = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={
+          <AuthRedirect>
+            <Signup />
+          </AuthRedirect>
+        } />
+        <Route path="/login" element={
+          <AuthRedirect>
+            <Login />
+          </AuthRedirect>
+        } />
 
         {/* Protected dashboard route */}
         <Route 
@@ -97,6 +108,16 @@ const AppRouter = () => {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Admin dashboard route */}
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           } 
         />

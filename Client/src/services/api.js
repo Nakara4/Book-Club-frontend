@@ -3,6 +3,34 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.retryCount = 3;
+    this.retryDelay = 1000;
+  }
+
+  // Enhanced retry mechanism
+  async retryRequest(requestFn, retries = this.retryCount) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      if (retries > 0 && this.shouldRetry(error)) {
+        await this.delay(this.retryDelay);
+        return this.retryRequest(requestFn, retries - 1);
+      }
+      throw error;
+    }
+  }
+
+  // Check if request should be retried
+  shouldRetry(error) {
+    // Retry on network errors, 5xx errors, but not on 4xx errors
+    if (!error.response) return true; // Network error
+    const status = error.response.status || 0;
+    return status >= 500 && status < 600;
+  }
+
+  // Delay utility for retry
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // Helper method to get auth headers
@@ -64,13 +92,13 @@ class ApiService {
 
   // Login user
   async login(credentials) {
-    const response = await fetch(`${this.baseURL}/token/`, {
+    const response = await fetch(`${this.baseURL}/auth/login/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: credentials.email,  // your Django endpoint expects username
+        email: credentials.email,
         password: credentials.password
       }),
     });
@@ -127,7 +155,7 @@ class ApiService {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(`${this.baseURL}/token/refresh/`, {
+    const response = await fetch(`${this.baseURL}/api/token/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

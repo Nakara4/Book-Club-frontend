@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import BookClubJoin from './BookClubJoin';
 import { bookClubAPI } from '../../services/api';
+import LoadingSpinner from '../ui/LoadingSpinner';
+import { getImageUrl, handleImageError } from '../../utils/imageUtils';
 
 const BookClubList = () => {
   const [bookClubs, setBookClubs] = useState([]);
@@ -14,7 +16,7 @@ const BookClubList = () => {
 
   const categories = [
     'Fiction',
-    'Non-Fiction',
+    'Non-Fiction', 
     'Mystery',
     'Romance',
     'Science Fiction',
@@ -22,7 +24,8 @@ const BookClubList = () => {
     'Biography',
     'History',
     'Self-Help',
-    'Young Adult'
+    'Young Adult',
+    'Literary Fiction'
   ];
 
   useEffect(() => {
@@ -75,12 +78,8 @@ const BookClubList = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen space-y-4">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200"></div>
-          <div className="absolute top-0 left-0 rounded-full h-16 w-16 border-4 border-primary-600 border-t-transparent"></div>
-        </div>
-        <p className="text-gray-600 font-medium">Loading book clubs...</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" color="primary" text="Loading book clubs..." />
       </div>
     );
   }
@@ -184,9 +183,10 @@ const BookClubList = () => {
             >
               {club.image && (
                 <img
-                  src={club.image}
+                  src={getImageUrl(club.image)}
                   alt={club.name}
                   className="w-full h-32 sm:h-40 lg:h-48 object-cover"
+                  onError={(e) => handleImageError(e, club.name)}
                 />
               )}
               <div className="p-4 md:p-6 flex-1 flex flex-col">

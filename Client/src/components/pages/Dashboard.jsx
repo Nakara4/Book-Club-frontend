@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -180,7 +181,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <LoadingSpinner size="md" color="primary" text="Loading dashboard..." />
       </div>
     );
   }

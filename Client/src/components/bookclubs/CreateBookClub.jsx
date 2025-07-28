@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { bookClubAPI } from '../../services/api';
+import { bookClubSchema } from '../../utils/validationSchemas';
+import Button from '../ui/Button';
+import FormField from '../ui/Form/FormField';
+import ErrorBoundary from '../common/ErrorBoundary';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 const CreateBookClub = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    category: '',
-    max_members: '',
-    reading_schedule: '',
-    meeting_frequency: 'weekly',
-    location: '',
-    is_private: false,
-    image: null
+  const [apiError, setApiError] = useState(null);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+  } = useForm({
+    resolver: yupResolver(bookClubSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      category: '',
+      maxMembers: '',
+      readingSchedule: '',
+      meetingFrequency: 'weekly',
+      location: '',
+      isPrivate: false,
+    },
   });
 
   const categories = [
@@ -38,106 +56,31 @@ const CreateBookClub = () => {
     { value: 'quarterly', label: 'Quarterly' }
   ];
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: null
-      }));
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          image: 'Image must be less than 5MB'
-        }));
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({
-          ...prev,
-          image: 'Please select a valid image file'
-        }));
-        return;
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        image: file
-      }));
-
-      // Clear image error
-      if (errors.image) {
-        setErrors(prev => ({
-          ...prev,
-          image: null
-        }));
-      }
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Book club name is required';
-    } else if (formData.name.length < 3) {
-      newErrors.name = 'Book club name must be at least 3 characters';
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    } else if (formData.description.length < 10) {
-      newErrors.description = 'Description must be at least 10 characters';
-    }
-
-    if (!formData.category) {
-      newErrors.category = 'Please select a category';
-    }
-
-    if (formData.max_members && (parseInt(formData.max_members) < 2 || parseInt(formData.max_members) > 1000)) {
-      newErrors.max_members = 'Maximum members must be between 2 and 1000';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+  const onSubmitHandler = async (data) => {
     setLoading(true);
+    setApiError(null);
 
     try {
       const submitData = new FormData();
       
       // Append all form fields
-      Object.keys(formData).forEach(key => {
-        if (key === 'image' && formData[key]) {
-          submitData.append(key, formData[key]);
-        } else if (key !== 'image') {
-          submitData.append(key, formData[key]);
+      Object.keys(data).forEach((key) => {
+        if (key === 'image' && data[key]?.[0]) {
+          submitData.append(key, data[key][0]);
+        } else if (key === 'maxMembers') {
+          // Convert to snake_case for API
+          submitData.append('max_members', data[key] || '');
+        } else if (key === 'readingSchedule') {
+          submitData.append('reading_schedule', data[key] || '');
+        } else if (key === 'meetingFrequency') {
+          submitData.append('meeting_frequency', data[key]);
+        } else if (key === 'isPrivate') {
+          submitData.append('is_private', data[key]);
+        } else {
+          submitData.append(key, data[key]);
         }
       });
-
+      
       const response = await bookClubAPI.createBookClub(submitData);
       
       // Navigate to the created book club's detail page
@@ -146,9 +89,9 @@ const CreateBookClub = () => {
       console.error('Error creating book club:', err);
       
       if (err.response && err.response.data) {
-        setErrors(err.response.data);
+        setApiError(err.response.data.message || 'Failed to create book club. Please try again.');
       } else {
-        setErrors({ general: 'Failed to create book club. Please try again.' });
+        setApiError('Failed to create book club. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -160,13 +103,13 @@ const CreateBookClub = () => {
       <div className="bg-white rounded-lg shadow-md p-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Create a New Book Club</h1>
 
-        {errors.general && (
+        {apiError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {errors.general}
+            {apiError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
           {/* Book Club Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -175,16 +118,14 @@ const CreateBookClub = () => {
             <input
               type="text"
               id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
+              {...register('name')}
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Enter book club name"
             />
             {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
             )}
           </div>
 
@@ -195,9 +136,7 @@ const CreateBookClub = () => {
             </label>
             <textarea
               id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
+              {...register('description')}
               rows={4}
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.description ? 'border-red-500' : 'border-gray-300'
@@ -205,7 +144,7 @@ const CreateBookClub = () => {
               placeholder="Describe your book club, what types of books you'll read, the atmosphere you want to create..."
             />
             {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
             )}
           </div>
 
@@ -216,9 +155,7 @@ const CreateBookClub = () => {
             </label>
             <select
               id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
+              {...register('category')}
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -231,43 +168,39 @@ const CreateBookClub = () => {
               ))}
             </select>
             {errors.category && (
-              <p className="text-red-500 text-sm mt-1">{errors.category}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
             )}
           </div>
 
           {/* Max Members */}
           <div>
-            <label htmlFor="max_members" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="maxMembers" className="block text-sm font-medium text-gray-700 mb-2">
               Maximum Members (Optional)
             </label>
             <input
               type="number"
-              id="max_members"
-              name="max_members"
-              value={formData.max_members}
-              onChange={handleInputChange}
+              id="maxMembers"
+              {...register('maxMembers')}
               min="2"
               max="1000"
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.max_members ? 'border-red-500' : 'border-gray-300'
+                errors.maxMembers ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Leave empty for unlimited"
             />
-            {errors.max_members && (
-              <p className="text-red-500 text-sm mt-1">{errors.max_members}</p>
+            {errors.maxMembers && (
+              <p className="text-red-500 text-sm mt-1">{errors.maxMembers.message}</p>
             )}
           </div>
 
           {/* Meeting Frequency */}
           <div>
-            <label htmlFor="meeting_frequency" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="meetingFrequency" className="block text-sm font-medium text-gray-700 mb-2">
               Meeting Frequency
             </label>
             <select
-              id="meeting_frequency"
-              name="meeting_frequency"
-              value={formData.meeting_frequency}
-              onChange={handleInputChange}
+              id="meetingFrequency"
+              {...register('meetingFrequency')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {meetingFrequencies.map((freq) => (
@@ -280,14 +213,12 @@ const CreateBookClub = () => {
 
           {/* Reading Schedule */}
           <div>
-            <label htmlFor="reading_schedule" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="readingSchedule" className="block text-sm font-medium text-gray-700 mb-2">
               Reading Schedule (Optional)
             </label>
             <textarea
-              id="reading_schedule"
-              name="reading_schedule"
-              value={formData.reading_schedule}
-              onChange={handleInputChange}
+              id="readingSchedule"
+              {...register('readingSchedule')}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Describe your reading schedule, pace, or any specific guidelines..."
@@ -302,9 +233,7 @@ const CreateBookClub = () => {
             <input
               type="text"
               id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
+              {...register('location')}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., Online, Local Library, Coffee Shop, etc."
             />
@@ -318,15 +247,14 @@ const CreateBookClub = () => {
             <input
               type="file"
               id="image"
-              name="image"
+              {...register('image')}
               accept="image/*"
-              onChange={handleImageChange}
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.image ? 'border-red-500' : 'border-gray-300'
               }`}
             />
             {errors.image && (
-              <p className="text-red-500 text-sm mt-1">{errors.image}</p>
+              <p className="text-red-500 text-sm mt-1">{errors.image.message}</p>
             )}
             <p className="text-gray-500 text-sm mt-1">
               Upload an image to represent your book club (max 5MB)
@@ -337,13 +265,11 @@ const CreateBookClub = () => {
           <div className="flex items-center">
             <input
               type="checkbox"
-              id="is_private"
-              name="is_private"
-              checked={formData.is_private}
-              onChange={handleInputChange}
+              id="isPrivate"
+              {...register('isPrivate')}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <label htmlFor="is_private" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="isPrivate" className="ml-2 block text-sm text-gray-700">
               Make this a private book club (invite-only)
             </label>
           </div>
