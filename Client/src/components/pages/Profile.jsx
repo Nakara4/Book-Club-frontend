@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import SEO from '../common/SEO';
+import apiService from '../../services/api';
 import {
   followUserThunk,
   unfollowUserThunk,
@@ -35,6 +36,86 @@ const Profile = () => {
   const following = useSelector((state) => selectFollowing(state, profileData?.id));
   const followersCount = useSelector((state) => selectFollowersCount(state, profileData?.id));
   const followingCount = useSelector((state) => selectFollowingCount(state, profileData?.id));
+
+useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userData = await apiService.getProfile();
+        const defaultProfileData = {
+          name: userData.name || userData.username || 'User',
+          email: userData.email || '',
+          bio: userData.bio || 'A book lover exploring new worlds.',
+          location: userData.location || '',
+          website: userData.website || '',
+          avatar: userData.avatar || null,
+          joinedDate: userData.joinedDate || userData.date_joined || new Date().toISOString(),
+          favoriteGenres: userData.favoriteGenres || [],
+          readingGoal: {
+            current: userData.readingGoal?.current || 0,
+            yearly: userData.readingGoal?.yearly || 12
+          },
+          stats: {
+            totalBooks: userData.stats?.totalBooks || 0,
+            bookClubsJoined: userData.stats?.bookClubsJoined || 0,
+            bookClubsOwned: userData.stats?.bookClubsOwned || 0,
+            discussionsStarted: userData.stats?.discussionsStarted || 0,
+            booksReviewed: userData.stats?.booksReviewed || 0
+          },
+          recentActivity: userData.recentActivity || [],
+          preferences: {
+            emailNotifications: userData.preferences?.emailNotifications || true,
+            discussionNotifications: userData.preferences?.discussionNotifications || true,
+            meetingReminders: userData.preferences?.meetingReminders || true,
+            bookRecommendations: userData.preferences?.bookRecommendations || true,
+            privacyLevel: userData.preferences?.privacyLevel || 'public'
+          },
+          ...userData
+        };
+        setProfileData(defaultProfileData);
+        
+        setFormData({
+          name: defaultProfileData.name,
+          bio: defaultProfileData.bio,
+          location: defaultProfileData.location,
+          website: defaultProfileData.website,
+          favoriteGenres: defaultProfileData.favoriteGenres,
+          readingGoal: defaultProfileData.readingGoal.yearly
+        });
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        setProfileData({
+          name: 'User',
+          email: '',
+          bio: 'A book lover exploring new worlds.',
+          location: '',
+          website: '',
+          avatar: null,
+          joinedDate: new Date().toISOString(),
+          favoriteGenres: [],
+          readingGoal: { current: 0, yearly: 12 },
+          stats: {
+            totalBooks: 0,
+            bookClubsJoined: 0,
+            bookClubsOwned: 0,
+            discussionsStarted: 0,
+            booksReviewed: 0
+          },
+          recentActivity: [],
+          preferences: {
+            emailNotifications: true,
+            discussionNotifications: true,
+            meetingReminders: true,
+            bookRecommendations: true,
+            privacyLevel: 'public'
+          }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     if (profileData?.id) {
@@ -74,7 +155,6 @@ const Profile = () => {
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
-    // TODO: Implement actual API call
     setProfileData(prev => ({
       ...prev,
       ...formData,
