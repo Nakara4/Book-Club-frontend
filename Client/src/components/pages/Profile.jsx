@@ -1,4 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import SEO from '../common/SEO';
+import {
+  followUserThunk,
+  unfollowUserThunk,
+  loadFollowers,
+  loadFollowing,
+  loadFollowStatus,
+  selectIsFollowing,
+  selectFollowLoading,
+  selectFollowError,
+  selectFollowers,
+  selectFollowing,
+  selectFollowersCount,
+  selectFollowingCount,
+} from '../../features/follows/followsSlice';
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(null);
@@ -7,73 +24,35 @@ const Profile = () => {
   const [formData, setFormData] = useState({});
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Mock data for demonstration
+  const navigate = useNavigate();
+  const params = useParams();
+  const currentUserId = useSelector((state) => state.auth.user?.id);
+  const dispatch = useDispatch();
+  const isFollowing = useSelector((state) => selectIsFollowing(state, profileData?.id));
+  const followLoading = useSelector((state) => selectFollowLoading(state, profileData?.id));
+  const followError = useSelector((state) => selectFollowError(state, profileData?.id));
+  const followers = useSelector((state) => selectFollowers(state, profileData?.id));
+  const following = useSelector((state) => selectFollowing(state, profileData?.id));
+  const followersCount = useSelector((state) => selectFollowersCount(state, profileData?.id));
+  const followingCount = useSelector((state) => selectFollowingCount(state, profileData?.id));
+
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const userData = {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        avatar: null,
-        bio: 'Passionate reader and book club enthusiast. Love exploring different genres and connecting with fellow book lovers.',
-        location: 'San Francisco, CA',
-        website: 'https://johndoe.com',
-        joinedDate: '2024-01-15',
-        favoriteGenres: ['Fiction', 'Mystery', 'Science Fiction', 'Biography'],
-        readingGoal: {
-          yearly: 24,
-          current: 12
-        },
-        stats: {
-          totalBooks: 47,
-          bookClubsJoined: 4,
-          bookClubsOwned: 1,
-          discussionsStarted: 23,
-          booksReviewed: 31
-        },
-        recentActivity: [
-          {
-            id: 1,
-            type: 'book_finished',
-            title: 'Finished reading "The Seven Husbands of Evelyn Hugo"',
-            date: '2024-07-22',
-            rating: 5
-          },
-          {
-            id: 2,
-            type: 'discussion_started',
-            title: 'Started discussion about character development',
-            clubName: 'Modern Fiction Book Club',
-            date: '2024-07-20'
-          },
-          {
-            id: 3,
-            type: 'club_joined',
-            title: 'Joined "Mystery & Thriller Enthusiasts"',
-            date: '2024-07-18'
-          }
-        ],
-        preferences: {
-          emailNotifications: true,
-          discussionNotifications: true,
-          meetingReminders: true,
-          bookRecommendations: false,
-          privacyLevel: 'public'
-        }
-      };
-      setProfileData(userData);
-      setFormData({
-        name: userData.name,
-        bio: userData.bio,
-        location: userData.location,
-        website: userData.website,
-        favoriteGenres: userData.favoriteGenres,
-        readingGoal: userData.readingGoal.yearly
-      });
-      setLoading(false);
-    }, 1000);
-  }, []);
+    if (profileData?.id) {
+      dispatch(loadFollowers({ userId: profileData.id }));
+      dispatch(loadFollowing({ userId: profileData.id }));
+      dispatch(loadFollowStatus(profileData.id));
+    }
+  }, [dispatch, profileData]);
+
+  const handleFollowToggle = () => {
+    if (!profileData?.id) return;
+
+    if (isFollowing) {
+      dispatch(unfollowUserThunk(profileData.id));
+    } else {
+      dispatch(followUserThunk(profileData.id));
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -168,8 +147,59 @@ const Profile = () => {
     );
   }
 
+  // Generate SEO data based on current tab and profile data
+  const getSEOData = () => {
+    if (!profileData) return {};
+    
+    const baseTitle = `${profileData.name} - Profile`;
+    const baseDescription = `View ${profileData.name}'s profile on Book Club Platform. ${profileData.bio || 'A book lover sharing their reading journey.'}`;
+    
+    switch (activeTab) {
+      case 'followers':
+        return {
+          title: `${profileData.name}'s Followers`,
+          description: `See who follows ${profileData.name} on Book Club Platform. ${followersCount || 0} followers.`,
+          keywords: `${profileData.name}, followers, book club, reading community`
+        };
+      case 'following':
+        return {
+          title: `${profileData.name}'s Following`,
+          description: `See who ${profileData.name} follows on Book Club Platform. Following ${followingCount || 0} users.`,
+          keywords: `${profileData.name}, following, book club, reading community`
+        };
+      case 'activity':
+        return {
+          title: `${profileData.name}'s Activity`,
+          description: `Recent activity by ${profileData.name} - book reviews, discussions, and reading progress.`,
+          keywords: `${profileData.name}, activity, books, reviews, discussions`
+        };
+      case 'stats':
+        return {
+          title: `${profileData.name}'s Reading Statistics`,
+          description: `${profileData.name}'s reading stats: ${profileData.stats?.totalBooks || 0} books read, ${profileData.stats?.bookClubsJoined || 0} clubs joined.`,
+          keywords: `${profileData.name}, reading statistics, books read, book clubs`
+        };
+      default:
+        return {
+          title: baseTitle,
+          description: baseDescription,
+          keywords: `${profileData.name}, profile, book lover, reading, book club`
+        };
+    }
+  };
+
+  const seoData = getSEOData();
+
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        author={profileData?.name}
+        type="profile"
+      />
+      <div className="max-w-6xl mx-auto p-6">
       {/* Profile Header */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex items-start space-x-6">
@@ -269,6 +299,26 @@ const Profile = () => {
               }`}
             >
               Preferences
+            </button>
+            <button
+              onClick={() => setActiveTab('followers')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'followers'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Followers ({followersCount || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('following')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'following'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Following ({followingCount || 0})
             </button>
           </nav>
         </div>
@@ -578,9 +628,124 @@ const Profile = () => {
               </div>
             </div>
           )}
+
+          {/* Followers Tab */}
+          {activeTab === 'followers' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-800">Followers</h3>
+                <button
+                  onClick={() => navigate(`/users/${profileData?.id}/followers`)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
+              
+              {followers && followers.length > 0 ? (
+                <div className="space-y-4">
+                  {followers.slice(0, 10).map((follower) => (
+                    <div key={follower.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                          {follower.avatar ? (
+                            <img
+                              src={follower.avatar}
+                              alt={follower.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-600 font-bold text-lg">
+                              {getInitials(follower.name)}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{follower.name}</p>
+                          <p className="text-sm text-gray-500">{follower.bio || 'Book lover'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/users/${follower.id}`)}
+                        className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md transition duration-200"
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No followers yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">When people follow this user, they'll appear here.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Following Tab */}
+          {activeTab === 'following' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-800">Following</h3>
+                <button
+                  onClick={() => navigate(`/users/${profileData?.id}/following`)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View All
+                </button>
+              </div>
+              
+              {following && following.length > 0 ? (
+                <div className="space-y-4">
+                  {following.slice(0, 10).map((followedUser) => (
+                    <div key={followedUser.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                          {followedUser.avatar ? (
+                            <img
+                              src={followedUser.avatar}
+                              alt={followedUser.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-600 font-bold text-lg">
+                              {getInitials(followedUser.name)}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{followedUser.name}</p>
+                          <p className="text-sm text-gray-500">{followedUser.bio || 'Book lover'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/users/${followedUser.id}`)}
+                        className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md transition duration-200"
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Not following anyone yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">When this user follows others, they'll appear here.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
+    </>
   );
 };
 

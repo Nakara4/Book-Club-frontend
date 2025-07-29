@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { selectIsAuthenticated, selectCurrentUser, selectIsStaff, logoutUser } from '../../features/auth/authSlice';
+import { selectIsAuthenticated, selectCurrentUser, selectIsStaff, isAdmin, logoutUser } from '../../features/auth/authSlice';
 import { useTheme } from '../../contexts/EnhancedThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/Button';
@@ -20,6 +20,7 @@ const Navigation = () => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const currentUser = useSelector(selectCurrentUser);
   const isStaff = useSelector(selectIsStaff);
+  const userIsAdmin = useSelector(isAdmin);
   
   // Fallback to apiService if Redux state is not initialized
   const fallbackAuth = apiService.isAuthenticated();
@@ -28,6 +29,7 @@ const Navigation = () => {
   const actualAuth = isAuthenticated || fallbackAuth;
   const actualUser = currentUser || fallbackUser;
   const actualIsStaff = isStaff || fallbackUser?.is_staff;
+  const actualIsAdmin = userIsAdmin || fallbackUser?.is_staff;
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -58,7 +60,11 @@ const Navigation = () => {
     { path: ROUTES.DASHBOARD, label: 'Dashboard', authRequired: true },
     { path: ROUTES.BOOK_CLUBS, label: 'Book Clubs', authRequired: true },
     { path: ROUTES.BOOK_CLUBS_MY_CLUBS, label: 'My Clubs', authRequired: true },
-    { path: ROUTES.ADMIN_DASHBOARD, label: 'Admin Dashboard', authRequired: true, staffRequired: true },
+  ];
+
+  const adminNavItems = [
+    { path: ROUTES.ADMIN_DASHBOARD, label: 'Dashboard' },
+    { path: ROUTES.ADMIN, label: 'Management Panel' },
   ];
 
   return (
@@ -90,6 +96,28 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            
+            {/* Admin Section - Only show for staff users */}
+            {actualAuth && actualIsStaff && (
+              <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 border-l border-neutral-200 dark:border-neutral-700 md:pl-6 md:ml-6">
+                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
+                  Admin
+                </span>
+                {adminNavItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium transition duration-300 ${
+                      location.pathname === item.path
+                        ? 'font-semibold text-orange-700 dark:text-orange-300'
+                        : ''
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
             
             {/* Theme Toggle */}
             <ThemeToggle className="md:ml-4" />
@@ -170,6 +198,23 @@ const Navigation = () => {
                           <span>Dashboard</span>
                         </div>
                       </Link>
+                      
+                      {/* Admin Panel Link - Only show for admin users */}
+                      {actualIsAdmin && (
+                        <Link
+                          to={ROUTES.ADMIN}
+                          onClick={() => setUserMenuOpen(false)}
+                          className="block px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-300"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Admin Panel</span>
+                          </div>
+                        </Link>
+                      )}
                       
                       <div className="border-t border-gray-200 dark:border-gray-700"></div>
                       

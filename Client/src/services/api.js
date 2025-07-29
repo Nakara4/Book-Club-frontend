@@ -5,6 +5,11 @@ class ApiService {
     this.baseURL = API_BASE_URL;
     this.retryCount = 3;
     this.retryDelay = 1000;
+    
+    console.log('API Base URL configured as:', this.baseURL);
+    if (!this.baseURL) {
+      console.error('VITE_API_BASE_URL environment variable is not set!');
+    }
   }
 
   // Enhanced retry mechanism
@@ -44,18 +49,70 @@ class ApiService {
 
   // Helper method to handle API responses
   async handleResponse(response) {
-    const data = await response.json();
+    let data;
+    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      // If response is not JSON, create a generic error
+      if (!response.ok) {
+        throw new Error(`${errorMessage} - Unable to parse response as JSON`);
+      }
+      throw new Error('Invalid JSON response from server');
+    }
     
     if (!response.ok) {
-      // Handle different types of errors
-      if (response.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        // Optionally redirect to login
+      // Handle different types of errors with specific messages
+      let userFriendlyMessage;
+      
+      switch (response.status) {
+        case 400:
+          userFriendlyMessage = 'Invalid request. Please check your input and try again.';
+          break;
+        case 401:
+          // Token expired or invalid - clear all auth data
+          console.log('Token expired or invalid, clearing authentication data');
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          
+          const tokenError = data.detail || data.error || data.message;
+          if (tokenError && (tokenError.includes('token') || tokenError.includes('Token'))) {
+            userFriendlyMessage = 'Your session has expired. Please log in again.';
+          } else {
+            userFriendlyMessage = 'Authentication required. Please log in to continue.';
+          }
+          break;
+        case 403:
+          userFriendlyMessage = 'You do not have permission to perform this action.';
+          break;
+        case 404:
+          const notFoundError = data.detail || data.error || data.message;
+          if (notFoundError && notFoundError.includes('BookClub')) {
+            userFriendlyMessage = 'Book club not found. It may have been deleted or the link is incorrect.';
+          } else {
+            userFriendlyMessage = 'The requested resource was not found.';
+          }
+          break;
+        case 429:
+          userFriendlyMessage = 'Too many requests. Please wait a moment and try again.';
+          break;
+        case 500:
+          userFriendlyMessage = 'Server error. Please try again later.';
+          break;
+        case 502:
+        case 503:
+        case 504:
+          userFriendlyMessage = 'Service temporarily unavailable. Please try again later.';
+          break;
+        default:
+          // Use the specific error from the API response if available
+          const specificError = data.error || data.message || data.detail || data.non_field_errors;
+          userFriendlyMessage = Array.isArray(specificError) ? specificError[0] : specificError || errorMessage;
       }
-      throw new Error(data.error || data.message || 'An error occurred');
+      
+      throw new Error(userFriendlyMessage);
     }
     
     return data;
@@ -228,22 +285,69 @@ class ApiService {
       }
     });
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
-
-    return this.handleResponse(response);
+    console.log('Fetching book clubs from:', url.toString());
+    
+    try {
+      // First try with auth headers if we have a token
+      const hasToken = !!localStorage.getItem('access_token');
+      const headers = hasToken ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers,
+      });
+      
+      console.log('Book clubs response status:', response.status, response.statusText);
+      
+      // If we got a 401 and we had a token, try again without auth
+      if (response.status === 401 && hasToken) {
+        console.log('Token invalid, retrying without authentication');
+        const unauthResponse = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return this.handleResponse(unauthResponse);
+      }
+      
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Network error fetching book clubs:', error);
+      throw new Error(`Failed to connect to the server. Please check if the backend is running on ${this.baseURL}`);
+    }
   }
 
   // Get a specific book club by ID
   async getBookClub(id) {
-    const response = await fetch(`${this.baseURL}/bookclubs/${id}/`, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
-
-    return this.handleResponse(response);
+    const url = `${this.baseURL}/bookclubs/${id}/`;
+    console.log('Fetching book club from:', url);
+    
+    try {
+      // First try with auth headers if we have a token
+      const hasToken = !!localStorage.getItem('access_token');
+      const headers = hasToken ? this.getAuthHeaders() : { 'Content-Type': 'application/json' };
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: headers,
+      });
+      
+      console.log('Book club response status:', response.status, response.statusText);
+      
+      // If we got a 401 and we had a token, try again without auth
+      if (response.status === 401 && hasToken) {
+        console.log('Token invalid, retrying without authentication');
+        const unauthResponse = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return this.handleResponse(unauthResponse);
+      }
+      
+      return this.handleResponse(response);
+    } catch (error) {
+      console.error('Network error fetching book club:', error);
+      throw new Error(`Failed to connect to the server. Please check if the backend is running on ${this.baseURL}`);
+    }
   }
 
   // Create a new book club

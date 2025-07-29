@@ -171,6 +171,75 @@ const analyticsSlice = createSlice({
   },
 });
 
+// Analytics event tracking thunk
+export const trackEvent = createAsyncThunk(
+  'analytics/trackEvent',
+  async ({ eventName, eventData = {}, userId }, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/analytics/events/`, {
+        event_name: eventName,
+        event_data: eventData,
+        user_id: userId,
+        timestamp: new Date().toISOString(),
+      }, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Failed to track event'
+      );
+    }
+  }
+);
+
+// Convenience functions for follow-related analytics
+export const trackFollowEvent = (targetUserId, currentUserId) => 
+  trackEvent({
+    eventName: 'user_follow',
+    eventData: {
+      target_user_id: targetUserId,
+      action: 'follow',
+      source: 'follow_button'
+    },
+    userId: currentUserId
+  });
+
+export const trackUnfollowEvent = (targetUserId, currentUserId) => 
+  trackEvent({
+    eventName: 'user_unfollow',
+    eventData: {
+      target_user_id: targetUserId,
+      action: 'unfollow',
+      source: 'follow_button'
+    },
+    userId: currentUserId
+  });
+
+export const trackFollowError = (targetUserId, currentUserId, error) => 
+  trackEvent({
+    eventName: 'user_follow_error',
+    eventData: {
+      target_user_id: targetUserId,
+      action: 'follow',
+      error_message: error,
+      source: 'follow_button'
+    },
+    userId: currentUserId
+  });
+
+export const trackUnfollowError = (targetUserId, currentUserId, error) => 
+  trackEvent({
+    eventName: 'user_unfollow_error',
+    eventData: {
+      target_user_id: targetUserId,
+      action: 'unfollow',
+      error_message: error,
+      source: 'follow_button'
+    },
+    userId: currentUserId
+  });
+
 export const { clearErrors, resetAnalytics } = analyticsSlice.actions;
 
 // Selectors

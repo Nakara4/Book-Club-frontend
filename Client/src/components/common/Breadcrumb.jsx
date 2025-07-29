@@ -45,6 +45,14 @@ const Breadcrumb = () => {
         breadcrumbs.push({ label: 'Dashboard', path: '/dashboard' });
       } else if (pathname === 'profile') {
         breadcrumbs.push({ label: 'Profile', path: '/profile' });
+      } else if (pathname === 'users') {
+        breadcrumbs.push({ label: 'Users', path: '/users' });
+      } else if (params.id && pathnames[index - 1] === 'users') {
+        breadcrumbs.push({ label: 'User Profile', path: `/users/${params.id}` });
+      } else if (pathname === 'followers' && params.id) {
+        breadcrumbs.push({ label: 'Followers', path: `/users/${params.id}/followers` });
+      } else if (pathname === 'following' && params.id) {
+        breadcrumbs.push({ label: 'Following', path: `/users/${params.id}/following` });
       }
     });
 

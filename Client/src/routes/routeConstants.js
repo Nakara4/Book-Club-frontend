@@ -8,7 +8,13 @@ export const ROUTES = {
   // Protected routes
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
+  
+  // Admin routes
+  ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_BOOKCLUBS: '/admin/bookclubs',
+  ADMIN_SETTINGS: '/admin/settings',
 
   // Book club routes
   BOOK_CLUBS: '/bookclubs',

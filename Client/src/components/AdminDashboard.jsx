@@ -34,6 +34,15 @@ ChartJS.register(
 );
 
 const AdminDashboard = () => {
+  const [tab, setTab] = React.useState('bookClubs');
+  const clubSummary = useSelector(state => state.analytics.activeClubsCount);
+  const userSummary = 100;  // Placeholder for user summary data
+
+  const tabs = [
+    { name: 'Book Clubs', id: 'bookClubs' },
+    { name: 'Users', id: 'users' },
+    { name: 'Future Resources', id: 'futureResources' }
+  ];
   const dispatch = useAppDispatch();
   const booksData = useSelector(selectBooksData);
   const summariesData = useSelector(selectSummariesData);
@@ -65,28 +74,7 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // Access control checks
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          <strong className="font-bold">Authentication Required: </strong>
-          <span className="block sm:inline">Please log in to view this page.</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isStaff) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <strong className="font-bold">Access Denied: </strong>
-          <span className="block sm:inline">Access restricted to admin users only.</span>
-        </div>
-      </div>
-    );
-  }
+  // Access control is now handled by AdminRoute wrapper
 
   if (isLoading) {
     return (
@@ -137,6 +125,39 @@ const AdminDashboard = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
+      <div className="tabs mb-4">
+        {tabs.map(tabItem => (
+          <button
+            key={tabItem.id}
+            className={`tab-link ${tabItem.id === tab ? 'active' : ''}`}
+            onClick={() => setTab(tabItem.id)}
+          >
+            {tabItem.name}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'bookClubs' && (
+        <div className="tab-content">
+          <h2 className="text-xl font-semibold mb-2">Book Clubs Summary: {clubSummary}</h2>
+          {/* Book Clubs content here */}
+        </div>
+      )}
+
+      {tab === 'users' && (
+        <div className="tab-content">
+          <h2 className="text-xl font-semibold mb-2">Users Summary: {userSummary}</h2>
+          {/* Users content here */}
+        </div>
+      )}
+
+      {tab === 'futureResources' && (
+        <div className="tab-content">
+          <h2 className="text-xl font-semibold mb-2">Future Resources</h2>
+          {/* Future resources content here */}
+        </div>
+      )}
+      
       <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
 
       {/* Books per Club Table */}

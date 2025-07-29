@@ -1,0 +1,137 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: User Follow API
+  description: API for managing user follow relationships.
+
+paths:
+  /api/users/{id}/follow/:
+    post:
+      summary: Follow a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to be followed
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Followed successfully (Idempotent)
+        '400':
+          description: Invalid request (e.g., trying to follow self)
+        '401':
+          description: Unauthorized
+        '429':
+          description: Too many requests
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      x-permissions:
+        - cannot follow self
+      x-rate-limit: 1000 requests per day
+    delete:
+      summary: Unfollow a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to be unfollowed
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unfollowed successfully (Idempotent)
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '429':
+          description: Too many requests
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      x-permissions:
+        - cannot follow self
+      x-rate-limit: 1000 requests per day
+
+  /api/users/{id}/followers/:
+    get:
+      summary: Get list of followers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+
+  /api/users/{id}/following/:
+    get:
+      summary: Get list of users the user is following
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of following
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+
+  /api/users/{id}/follow-status/:
+    get:
+      summary: Get follow status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Follow status
+          content:
+            application/json:
+              schema:
+                type: string
+                enum: ["following", "not-following", "self"]
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionId

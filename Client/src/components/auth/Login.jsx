@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import apiService from '../../services/api';
+import { loginUser } from '../../features/auth/authSlice';
 import FormField from '../ui/Form/FormField';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
   const [generalError, setGeneralError] = useState('');
   
   const schema = yup.object().shape({
@@ -16,7 +20,7 @@ const Login = () => {
     password: yup.string().required('Password is required')
   });
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema)
   });
 
@@ -24,19 +28,14 @@ const Login = () => {
     setGeneralError(''); // Clear any previous errors
     
     try {
-      const response = await apiService.login(data);
-
-      // Store tokens
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
-
+      const result = await dispatch(loginUser(data)).unwrap();
+      
       // Redirect to the originally requested page or dashboard
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
 
     } catch (error) {
       console.error('Login error:', error);
-
       setGeneralError(error.message || 'Invalid email or password. Please try again.');
     }
   };
@@ -108,14 +107,14 @@ const Login = () => {
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={loading}
                 className={`btn-primary w-full justify-center ${
-                  isSubmitting 
+                  loading 
                     ? 'opacity-50 cursor-not-allowed' 
                     : ''
                 }`}
               >
-                {isSubmitting ? (
+                {loading ? (
                   <div className="flex items-center">
                     <LoadingSpinner size="sm" color="white" className="mr-2" />
                     Signing In...

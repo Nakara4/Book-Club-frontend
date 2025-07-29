@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import UserCard from '../ui/UserCard';
 
 const BookClubMembers = () => {
   const { id } = useParams();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'grid'
 
   // Mock data for demonstration
   useEffect(() => {
@@ -43,21 +45,14 @@ const BookClubMembers = () => {
     }, 1000);
   }, [id]);
 
-  const getRoleColor = (role) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'moderator':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'member':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Handle follow status changes
+  const handleFollowChange = useCallback((isFollowing, targetUserId) => {
+    console.log(`User ${targetUserId} ${isFollowing ? 'followed' : 'unfollowed'}`);
+    // You can add any additional logic here, like updating local state or showing notifications
+  }, []);
 
-  const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'list' ? 'grid' : 'list');
   };
 
   if (loading) {
@@ -72,73 +67,95 @@ const BookClubMembers = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md">
         <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">Book Club Members</h1>
-            <Link
-              to={`/bookclubs/${id}/invite`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"
-            >
-              Invite Members
-            </Link>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Book Club Members</h1>
+              <p className="text-gray-600 mt-2">{members.length} members</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={toggleViewMode}
+                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="List view"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <button
+                  onClick={toggleViewMode}
+                  className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Grid view"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+              </div>
+              <Link
+                to={`/bookclubs/${id}/invite`}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 whitespace-nowrap"
+              >
+                Invite Members
+              </Link>
+            </div>
           </div>
-          <p className="text-gray-600 mt-2">{members.length} members</p>
         </div>
 
         <div className="p-6">
-          <div className="space-y-4">
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition duration-200"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-gray-600 font-medium">
-                        {getInitials(member.name)}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-800">{member.name}</h3>
-                    <p className="text-gray-600">{member.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Joined {new Date(member.joinDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="space-y-4">
+              {members.map((member) => (
+                <UserCard
+                  key={member.id}
+                  user={member}
+                  showFollowButton={true}
+                  showRole={true}
+                  showStatus={true}
+                  showEmail={true}
+                  showJoinDate={true}
+                  size="md"
+                  layout="horizontal"
+                  linkToProfile={true}
+                  onFollowChange={handleFollowChange}
+                  className="w-full"
+                />
+              ))}
+            </div>
+          )}
 
-                <div className="flex items-center space-x-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleColor(member.role)}`}
-                  >
-                    {member.role}
-                  </span>
-                  <div className="flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        member.isActive ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
-                      title={member.isActive ? 'Active' : 'Inactive'}
-                    ></div>
-                  </div>
-                  <div className="relative">
-                    <button className="text-gray-400 hover:text-gray-600 p-1">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {members.map((member) => (
+                <UserCard
+                  key={member.id}
+                  user={member}
+                  showFollowButton={true}
+                  showRole={true}
+                  showStatus={true}
+                  showEmail={false}
+                  showJoinDate={false}
+                  size="sm"
+                  layout="vertical"
+                  linkToProfile={true}
+                  onFollowChange={handleFollowChange}
+                  className="h-full"
+                />
+              ))}
+            </div>
+          )}
 
           {members.length === 0 && (
             <div className="text-center py-12">

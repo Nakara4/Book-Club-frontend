@@ -4,7 +4,10 @@ import Home from '../components/pages/Home';
 import Signup from '../components/auth/Signup';
 import Login from '../components/auth/Login';
 import AdminDashboard from '../components/AdminDashboard';
+import AdminPanel from '../components/admin/AdminPanel';
+import AdminRouteDemo from '../components/demo/AdminRouteDemo';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import AdminRoute from '../components/common/AdminRoute';
 import AuthRedirect from '../components/common/AuthRedirect';
 import BookClubLayout from '../components/bookclubs/BookClubLayout';
 import { BookClubList, CreateBookClub, BookClubDetail } from '../components/bookclubs';
@@ -53,11 +56,7 @@ const Dashboard = React.lazy(() =>
   )
 );
 
-const Profile = React.lazy(() => 
-  import('../components/pages/Profile').catch(() => 
-    ({ default: () => <div className="p-8 text-center">Profile (Coming Soon)</div> })
-  )
-);
+const Profile = React.lazy(() => import('../components/pages/Profile'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -112,13 +111,63 @@ const AppRouter = () => {
           } 
         />
 
-        {/* Admin dashboard route */}
+        {/* User profile routes */}
+        <Route 
+          path="/users/:id" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/users/:id/followers" 
+          element={
+            <ProtectedRoute>
+              <div>Followers List Page (Coming Soon)</div>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/users/:id/following" 
+          element={
+            <ProtectedRoute>
+              <div>Following List Page (Coming Soon)</div>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Admin routes - all protected by AdminRoute */}
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/panel" 
+          element={
+            <AdminRoute>
+              <AdminPanel />
+            </AdminRoute>
+          } 
+        />
         <Route 
           path="/admin/dashboard" 
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <AdminDashboard />
-            </ProtectedRoute>
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/test" 
+          element={
+            <AdminRoute>
+              <AdminRouteDemo />
+            </AdminRoute>
           } 
         />
 

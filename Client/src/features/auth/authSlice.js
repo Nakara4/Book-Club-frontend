@@ -41,7 +41,7 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await apiService.login(credentials);
-      return response.data;
+      return response; // API service already handles the response and returns the data
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -71,7 +71,7 @@ export const refreshToken = createAsyncThunk(
       }
       
       const response = await apiService.refreshToken(refreshToken);
-      return response.data;
+      return response; // API service already handles the response and returns the data
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -212,8 +212,7 @@ const authSlice = createSlice({
       })
       // Refresh token
       .addCase(refreshToken.fulfilled, (state, action) => {
-        const { tokens } = action.payload;
-        const token = tokens?.access;
+        const token = action.payload.access;
         
         if (token) {
           try {
@@ -223,9 +222,7 @@ const authSlice = createSlice({
             state.isStaff = decodedToken.is_staff || state.user?.is_staff || false;
             
             localStorage.setItem('access_token', token);
-            if (tokens?.refresh) {
-              localStorage.setItem('refresh_token', tokens.refresh);
-            }
+            // The refresh token endpoint only returns access token, not refresh token
           } catch (error) {
             console.error('Error decoding refreshed token:', error);
           }
@@ -254,5 +251,8 @@ export const selectToken = (state) => state.auth.token;
 export const selectDecodedToken = (state) => state.auth.decodedToken;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectIsStaff = (state) => state.auth.isStaff;
+
+// Helper selector for admin access
+export const isAdmin = (state) => state.auth.isStaff;
 
 export default authSlice.reducer;

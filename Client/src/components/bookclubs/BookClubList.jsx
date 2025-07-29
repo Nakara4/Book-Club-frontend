@@ -245,11 +245,11 @@ const BookClubList = () => {
           >
             Previous
           </button>
-          
+
           <span className="px-4 py-2 text-gray-700">
             Page {currentPage} of {totalPages}
           </span>
-          
+
           <button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
@@ -261,6 +261,18 @@ const BookClubList = () => {
       )}
     </div>
   );
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this book club?')) return;
+
+    try {
+      await bookClubAPI.deleteBookClub(id);
+      setBookClubs(bookClubs.filter(club => club.id !== id));
+    } catch (err) {
+      console.error('Failed to delete book club:', err);
+      alert('Could not delete the book club. Please try again.');
+    }
+  };
 };
 
 export default BookClubList;
