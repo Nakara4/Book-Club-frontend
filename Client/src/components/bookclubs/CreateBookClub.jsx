@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -10,11 +10,20 @@ import Button from '../ui/Button';
 import FormField from '../ui/Form/FormField';
 import ErrorBoundary from '../common/ErrorBoundary';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import apiService from '../../services/api';
+import tokenService from '../../utils/tokenService';
 
 const CreateBookClub = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(apiService.isAuthenticated());
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
   
   const {
     register,
@@ -61,25 +70,57 @@ const CreateBookClub = () => {
     setApiError(null);
 
     try {
+      console.log('Form data received:', data);
       const submitData = new FormData();
       
-      // Append all form fields
+      // Append all form fields, but only include non-empty values
       Object.keys(data).forEach((key) => {
-        if (key === 'image' && data[key]?.[0]) {
-          submitData.append(key, data[key][0]);
+        if (key === 'image') {
+          // Only append image if a file was actually selected
+          if (data[key] && data[key][0] && data[key][0] instanceof File) {
+            submitData.append(key, data[key][0]);
+            console.log(`Added ${key}:`, data[key][0]);
+          } else {
+            console.log(`Skipping ${key}: no file selected`);
+          }
         } else if (key === 'maxMembers') {
-          // Convert to snake_case for API
-          submitData.append('max_members', data[key] || '');
+          // Convert to snake_case for API, only append if not empty
+          if (data[key] && data[key] !== '') {
+            submitData.append('max_members', data[key]);
+            console.log(`Added max_members: ${data[key]}`);
+          }
         } else if (key === 'readingSchedule') {
-          submitData.append('reading_schedule', data[key] || '');
+          // Only append if not empty
+          if (data[key] && data[key] !== '') {
+            submitData.append('reading_schedule', data[key]);
+            console.log(`Added reading_schedule: ${data[key]}`);
+          }
         } else if (key === 'meetingFrequency') {
           submitData.append('meeting_frequency', data[key]);
+          console.log(`Added meeting_frequency: ${data[key]}`);
         } else if (key === 'isPrivate') {
           submitData.append('is_private', data[key]);
+          console.log(`Added is_private: ${data[key]}`);
+        } else if (key === 'location') {
+          // Only append if not empty
+          if (data[key] && data[key] !== '') {
+            submitData.append(key, data[key]);
+            console.log(`Added ${key}: ${data[key]}`);
+          }
         } else {
-          submitData.append(key, data[key]);
+          // For required fields like name, description, category
+          if (data[key] && data[key] !== '') {
+            submitData.append(key, data[key]);
+            console.log(`Added ${key}: ${data[key]}`);
+          }
         }
       });
+      
+      // Log all FormData entries
+      console.log('FormData entries:');
+      for (let [key, value] of submitData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
       
       const response = await bookClubAPI.createBookClub(submitData);
       
@@ -88,11 +129,8 @@ const CreateBookClub = () => {
     } catch (err) {
       console.error('Error creating book club:', err);
       
-      if (err.response && err.response.data) {
-        setApiError(err.response.data.message || 'Failed to create book club. Please try again.');
-      } else {
-        setApiError('Failed to create book club. Please try again.');
-      }
+      // Show the actual error message from the API
+      setApiError(err.message || 'Failed to create book club. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -49,7 +49,7 @@ const BookClubDetail = () => {
         await fetchBookClubDetails(); // Refresh the data
       } catch (err) {
         console.error('Error leaving book club:', err);
-        alert('Failed to leave book club. Please try again.');
+        alert(`Failed to leave book club: ${err.message}`);
       } finally {
         setActionLoading(false);
       }
@@ -57,14 +57,21 @@ const BookClubDetail = () => {
   };
 
   const handleDeleteClub = async () => {
-    if (window.confirm('Are you sure you want to delete this book club? This action cannot be undone.')) {
+    const confirmMessage = `Are you sure you want to delete "${bookClub.name}"?\n\nThis will permanently delete:\n• The book club and all its data\n• All discussions and posts\n• All member relationships\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
       try {
         setActionLoading(true);
         await bookClubAPI.deleteBookClub(id);
+        
+        // Show success message
+        alert(`"${bookClub.name}" has been successfully deleted.`);
+        
+        // Navigate back to book clubs list
         navigate('/bookclubs');
       } catch (err) {
         console.error('Error deleting book club:', err);
-        alert('Failed to delete book club. Please try again.');
+        alert(`Failed to delete book club: ${err.message}`);
         setActionLoading(false);
       }
     }

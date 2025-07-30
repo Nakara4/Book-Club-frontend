@@ -13,6 +13,7 @@ const BookClubList = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const categories = [
     'Fiction',
@@ -31,6 +32,19 @@ const BookClubList = () => {
   useEffect(() => {
     fetchBookClubs();
   }, [currentPage, searchTerm, selectedCategory]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdown && !event.target.closest('.relative')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   const fetchBookClubs = async () => {
     try {
@@ -81,6 +95,25 @@ const BookClubList = () => {
     setError(errorMessage);
     // Clear error after 5 seconds
     setTimeout(() => setError(null), 5000);
+  };
+
+  const handleDeleteClub = async (club) => {
+    const confirmMessage = `Are you sure you want to delete "${club.name}"?\n\nThis will permanently delete:\n• The book club and all its data\n• All discussions and posts\n• All member relationships\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        await bookClubAPI.deleteBookClub(club.id);
+        
+        // Show success message
+        alert(`"${club.name}" has been successfully deleted.`);
+        
+        // Refresh the book clubs list
+        fetchBookClubs();
+      } catch (err) {
+        console.error('Error deleting book club:', err);
+        alert(`Failed to delete book club: ${err.message}`);
+      }
+    }
   };
 
   if (loading) {
@@ -197,9 +230,43 @@ const BookClubList = () => {
                 />
               )}
               <div className="p-4 md:p-6 flex-1 flex flex-col">
-                <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2">
-                  {club.name}
-                </h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2 pr-4">
+                    {club.name}
+                  </h3>
+                  {club.is_creator && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenDropdown(openDropdown === club.id ? null : club.id)}
+                        className="p-1 rounded-full hover:bg-gray-100 transition duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </button>
+                      {openDropdown === club.id && (
+                        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+                          <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                            <Link
+                              to={`/bookclubs/${club.id}/edit`}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full text-left"
+                              role="menuitem"
+                            >
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteClub(club)}
+                              className="block px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 w-full text-left"
+                              role="menuitem"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-3">
                   {club.description}
                 </p>

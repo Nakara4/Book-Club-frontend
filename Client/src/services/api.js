@@ -71,9 +71,40 @@ class ApiService {
       if (response.status === 401) {
         // Token expired or invalid
         tokenService.clearAuthTokens();
-        // Optionally redirect to login
+        throw new Error('Authentication required. Please log in.');
       }
-      throw new Error(data.error || data.message || 'An error occurred');
+      
+      // Create more specific error messages
+      let errorMessage = 'An error occurred';
+      if (data.detail) {
+        errorMessage = data.detail;
+      } else if (data.error) {
+        errorMessage = data.error;
+      } else if (data.message) {
+        errorMessage = data.message;
+      } else if (data.non_field_errors) {
+        errorMessage = Array.isArray(data.non_field_errors) 
+          ? data.non_field_errors.join(', ') 
+          : data.non_field_errors;
+      } else if (typeof data === 'object') {
+        // Handle field-specific errors
+        const fieldErrors = Object.keys(data)
+          .filter(key => key !== 'error' && key !== 'message')
+          .map(key => {
+            const fieldError = data[key];
+            return Array.isArray(fieldError) ? `${key}: ${fieldError.join(', ')}` : `${key}: ${fieldError}`;
+          });
+        if (fieldErrors.length > 0) {
+          errorMessage = fieldErrors.join('; ');
+        }
+      }
+      
+      // Include status code in error message for debugging
+      if (errorMessage === 'An error occurred') {
+        errorMessage = `Server error (${response.status}): ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
     
     return data;
@@ -217,19 +248,57 @@ class ApiService {
 
   // Handle response for FormData requests
   async handleFormDataResponse(response) {
+    console.log('FormData Response Status:', response.status);
+    console.log('FormData Response OK:', response.ok);
+    console.log('FormData Response URL:', response.url);
+    
     if (!response.ok) {
       let errorData;
       try {
         errorData = await response.json();
-      } catch {
-        errorData = { error: 'An error occurred' };
+        console.log('FormData Error Response Data:', errorData);
+      } catch (parseError) {
+        console.error('Failed to parse FormData error response:', parseError);
+        errorData = { 
+          error: `Server error (${response.status}): ${response.statusText}`,
+          status: response.status,
+          statusText: response.statusText
+        };
       }
       
       if (response.status === 401) {
         tokenService.clearAuthTokens();
+        const error = new Error('Authentication required. Please log in.');
+        error.response = { data: errorData };
+        throw error;
       }
       
-      const error = new Error(errorData.error || errorData.message || 'An error occurred');
+      // Create more specific error messages
+      let errorMessage = 'An error occurred';
+      if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.non_field_errors) {
+        errorMessage = Array.isArray(errorData.non_field_errors) 
+          ? errorData.non_field_errors.join(', ') 
+          : errorData.non_field_errors;
+      } else if (typeof errorData === 'object') {
+        // Handle field-specific errors
+        const fieldErrors = Object.keys(errorData)
+          .filter(key => key !== 'error' && key !== 'message')
+          .map(key => {
+            const fieldError = errorData[key];
+            return Array.isArray(fieldError) ? `${key}: ${fieldError.join(', ')}` : `${key}: ${fieldError}`;
+          });
+        if (fieldErrors.length > 0) {
+          errorMessage = fieldErrors.join('; ');
+        }
+      }
+      
+      const error = new Error(errorMessage);
       error.response = { data: errorData };
       throw error;
     }

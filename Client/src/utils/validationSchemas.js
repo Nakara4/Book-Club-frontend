@@ -31,7 +31,7 @@ export const bookClubSchema = yup.object().shape({
   
   meetingFrequency: yup
     .string()
-    .oneOf(['weekly', 'bi-weekly', 'monthly', 'quarterly'], 'Invalid meeting frequency'),
+    .oneOf(['weekly', 'biweekly', 'monthly', 'quarterly'], 'Invalid meeting frequency'),
   
   location: yup
     .string()
