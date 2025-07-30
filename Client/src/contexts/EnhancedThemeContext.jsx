@@ -14,7 +14,7 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState('light');
   const [systemPreference, setSystemPreference] = useState('light');
 
-  // Check system preference
+  
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setSystemPreference(mediaQuery.matches ? 'dark' : 'light');
@@ -27,7 +27,7 @@ export const ThemeProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Load saved theme preference
+  
   useEffect(() => {
     const savedTheme = localStorage.getItem('bookclub-theme');
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
@@ -35,15 +35,15 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
-  // Apply theme to document
+ 
   useEffect(() => {
     const effectiveTheme = theme === 'system' ? systemPreference : theme;
     
-    // Remove all theme classes
+    
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.removeAttribute('data-theme');
     
-    // Apply new theme
+   
     document.documentElement.classList.add(effectiveTheme);
     document.documentElement.setAttribute('data-theme', effectiveTheme);
   }, [theme, systemPreference]);
