@@ -42,13 +42,20 @@ const BookClubList = () => {
         page_size: 12
       };
 
+      console.log('Fetching book clubs with params:', params);
       const response = await bookClubAPI.getBookClubs(params);
+      console.log('Book clubs response:', response);
       setBookClubs(response.results);
       setTotalPages(Math.ceil(response.count / 12));
       setError(null);
     } catch (err) {
       setError('Failed to fetch book clubs. Please try again.');
       console.error('Error fetching book clubs:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
     } finally {
       setLoading(false);
     }

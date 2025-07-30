@@ -1,28 +1,27 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
 import apiService from '../../services/api';
+import tokenService from '../../utils/tokenService';
 
 const getInitialAuthState = () => {
-  const token = localStorage.getItem('access_token');
-  const user = localStorage.getItem('user');
+  const token = tokenService.getAccessToken();
+  const user = tokenService.getUser();
   
-  if (token && user) {
+  if (token && user && !tokenService.isTokenExpired(token)) {
     try {
       const decodedToken = jwtDecode(token);
-      const parsedUser = JSON.parse(user);
-      
-      // Check if token is expired
-      if (decodedToken.exp * 1000 > Date.now()) {
-        return {
-          user: parsedUser,
-          token,
-          decodedToken,
-          isAuthenticated: true,
-          isStaff: decodedToken.is_staff || parsedUser.is_staff || false,
-        };
-      }
+      return {
+        user,
+        token,
+        decodedToken,
+        isAuthenticated: true,
+        isAdmin: decodedToken.is_staff || false,
+        isStaff: decodedToken.is_staff || false, // Keep for backwards compatibility
+      };
     } catch (error) {
       console.error('Error decoding token:', error);
+      // Clear invalid tokens
+      tokenService.clearAuthTokens();
     }
   }
   
@@ -31,6 +30,7 @@ const getInitialAuthState = () => {
     token: null,
     decodedToken: null,
     isAuthenticated: false,
+    isAdmin: false,
     isStaff: false,
   };
 };
@@ -65,7 +65,7 @@ export const refreshToken = createAsyncThunk(
   'auth/refreshToken',
   async (_, { getState, rejectWithValue }) => {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = tokenService.getRefreshToken();
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
@@ -99,14 +99,12 @@ const authSlice = createSlice({
           state.token = token;
           state.decodedToken = decodedToken;
           state.isAuthenticated = true;
-          state.isStaff = decodedToken.is_staff || user.is_staff || false;
+          state.isAdmin = decodedToken.is_staff || false;
+          state.isStaff = decodedToken.is_staff || false; // Keep for backwards compatibility
           
-          // Store in localStorage
-          localStorage.setItem('access_token', token);
-          localStorage.setItem('user', JSON.stringify(user));
-          if (tokens?.refresh) {
-            localStorage.setItem('refresh_token', tokens.refresh);
-          }
+          // Store in localStorage using tokenService
+          tokenService.setTokens(token, tokens?.refresh);
+          tokenService.setUser(user);
         } catch (error) {
           console.error('Error decoding token:', error);
         }
@@ -117,12 +115,11 @@ const authSlice = createSlice({
       state.token = null;
       state.decodedToken = null;
       state.isAuthenticated = false;
+      state.isAdmin = false;
       state.isStaff = false;
       
-      // Clear localStorage
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
+      // Clear localStorage using tokenService
+      tokenService.clearAuthTokens();
     },
     updateToken: (state, action) => {
       const { token } = action.payload;
@@ -132,9 +129,10 @@ const authSlice = createSlice({
           const decodedToken = jwtDecode(token);
           state.token = token;
           state.decodedToken = decodedToken;
-          state.isStaff = decodedToken.is_staff || state.user?.is_staff || false;
+          state.isAdmin = decodedToken.is_staff || false;
+          state.isStaff = decodedToken.is_staff || false; // Keep for backwards compatibility
           
-          localStorage.setItem('access_token', token);
+          tokenService.setTokens(token);
         } catch (error) {
           console.error('Error decoding token:', error);
         }
@@ -163,13 +161,11 @@ const authSlice = createSlice({
             state.token = token;
             state.decodedToken = decodedToken;
             state.isAuthenticated = true;
-            state.isStaff = decodedToken.is_staff || user.is_staff || false;
+            state.isAdmin = decodedToken.is_staff || false;
+            state.isStaff = decodedToken.is_staff || false; // Keep for backwards compatibility
             
-            localStorage.setItem('access_token', token);
-            localStorage.setItem('user', JSON.stringify(user));
-            if (tokens?.refresh) {
-              localStorage.setItem('refresh_token', tokens.refresh);
-            }
+            tokenService.setTokens(token, tokens?.refresh);
+            tokenService.setUser(user);
           } catch (error) {
             console.error('Error decoding token:', error);
             state.error = 'Invalid token received';
@@ -190,12 +186,11 @@ const authSlice = createSlice({
         state.token = null;
         state.decodedToken = null;
         state.isAuthenticated = false;
+        state.isAdmin = false;
         state.isStaff = false;
         state.error = null;
         
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        tokenService.clearAuthTokens();
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
@@ -204,11 +199,10 @@ const authSlice = createSlice({
         state.token = null;
         state.decodedToken = null;
         state.isAuthenticated = false;
+        state.isAdmin = false;
         state.isStaff = false;
         
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        tokenService.clearAuthTokens();
       })
       // Refresh token
       .addCase(refreshToken.fulfilled, (state, action) => {
@@ -220,12 +214,10 @@ const authSlice = createSlice({
             const decodedToken = jwtDecode(token);
             state.token = token;
             state.decodedToken = decodedToken;
-            state.isStaff = decodedToken.is_staff || state.user?.is_staff || false;
+            state.isAdmin = decodedToken.is_staff || false;
+            state.isStaff = decodedToken.is_staff || false; // Keep for backwards compatibility
             
-            localStorage.setItem('access_token', token);
-            if (tokens?.refresh) {
-              localStorage.setItem('refresh_token', tokens.refresh);
-            }
+            tokenService.setTokens(token, tokens?.refresh);
           } catch (error) {
             console.error('Error decoding refreshed token:', error);
           }
@@ -237,11 +229,10 @@ const authSlice = createSlice({
         state.token = null;
         state.decodedToken = null;
         state.isAuthenticated = false;
+        state.isAdmin = false;
         state.isStaff = false;
         
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        tokenService.clearAuthTokens();
       });
   },
 });
@@ -253,6 +244,7 @@ export const selectCurrentUser = (state) => state.auth.user;
 export const selectToken = (state) => state.auth.token;
 export const selectDecodedToken = (state) => state.auth.decodedToken;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectIsStaff = (state) => state.auth.isStaff;
+export const selectIsAdmin = (state) => state.auth.isAdmin;
+export const selectIsStaff = (state) => state.auth.isStaff; // Keep for backwards compatibility
 
 export default authSlice.reducer;

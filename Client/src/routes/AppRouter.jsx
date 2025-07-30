@@ -5,7 +5,9 @@ import Signup from '../components/auth/Signup';
 import Login from '../components/auth/Login';
 import AdminDashboard from '../components/AdminDashboard';
 import ProtectedRoute from '../components/common/ProtectedRoute';
+import AdminProtectedRoute from '../components/common/AdminProtectedRoute';
 import AuthRedirect from '../components/common/AuthRedirect';
+import Forbidden from '../components/pages/Forbidden';
 import BookClubLayout from '../components/bookclubs/BookClubLayout';
 import { BookClubList, CreateBookClub, BookClubDetail } from '../components/bookclubs';
 import apiService from '../services/api';
@@ -15,6 +17,23 @@ const BookClubEdit = React.lazy(() =>
   import('../components/bookclubs/BookClubEdit').catch(() => 
     ({ default: () => <div className="p-8 text-center">Book Club Edit (Coming Soon)</div> })
   )
+);
+
+// Admin components - lazy loaded
+const AdminAnalytics = React.lazy(() => 
+  Promise.resolve({ default: () => <div className="p-8 text-center">Admin Analytics (Coming Soon)</div> })
+);
+
+const AdminBooks = React.lazy(() => 
+  Promise.resolve({ default: () => <div className="p-8 text-center">Admin Books Management (Coming Soon)</div> })
+);
+
+const AdminUsers = React.lazy(() => 
+  Promise.resolve({ default: () => <div className="p-8 text-center">Admin Users Management (Coming Soon)</div> })
+);
+
+const AdminSettings = React.lazy(() => 
+  Promise.resolve({ default: () => <div className="p-8 text-center">Admin Settings (Coming Soon)</div> })
 );
 
 const BookClubMembers = React.lazy(() => 
@@ -112,13 +131,64 @@ const AppRouter = () => {
           } 
         />
 
-        {/* Admin dashboard route */}
+        {/* 403 Forbidden route */}
+        <Route path="/403" element={<Forbidden />} />
+
+        {/* Admin routes - all protected with AdminProtectedRoute */}
+        <Route path="/admin" element={<AdminProtectedRoute><Navigate to="/admin/dashboard" replace /></AdminProtectedRoute>} />
+        
         <Route 
           path="/admin/dashboard" 
           element={
-            <ProtectedRoute>
+            <AdminProtectedRoute>
               <AdminDashboard />
-            </ProtectedRoute>
+            </AdminProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/analytics" 
+          element={
+            <AdminProtectedRoute>
+              <AdminAnalytics />
+            </AdminProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/users" 
+          element={
+            <AdminProtectedRoute>
+              <AdminUsers />
+            </AdminProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/settings" 
+          element={
+            <AdminProtectedRoute>
+              <AdminSettings />
+            </AdminProtectedRoute>
+          } 
+        />
+        
+        {/* Admin books routes with wildcard matching */}
+        <Route 
+          path="/admin/books" 
+          element={
+            <AdminProtectedRoute>
+              <AdminBooks />
+            </AdminProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/books/*" 
+          element={
+            <AdminProtectedRoute>
+              <AdminBooks />
+            </AdminProtectedRoute>
           } 
         />
 

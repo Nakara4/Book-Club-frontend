@@ -8,7 +8,14 @@ export const ROUTES = {
   // Protected routes
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
+  
+  // Admin routes
+  ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_ANALYTICS: '/admin/analytics',
+  ADMIN_BOOKS: '/admin/books',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_SETTINGS: '/admin/settings',
 
   // Book club routes
   BOOK_CLUBS: '/bookclubs',
@@ -44,6 +51,14 @@ export const generateBookClubRoutes = (id) => ({
 export const ROUTE_GROUPS = {
   PUBLIC: [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP],
   PROTECTED: [ROUTES.DASHBOARD, ROUTES.PROFILE],
+  ADMIN: [
+    ROUTES.ADMIN,
+    ROUTES.ADMIN_DASHBOARD,
+    ROUTES.ADMIN_ANALYTICS,
+    ROUTES.ADMIN_BOOKS,
+    ROUTES.ADMIN_USERS,
+    ROUTES.ADMIN_SETTINGS,
+  ],
   BOOK_CLUBS: [
     ROUTES.BOOK_CLUBS,
     ROUTES.BOOK_CLUBS_CREATE,

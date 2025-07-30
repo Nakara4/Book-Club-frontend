@@ -1,3 +1,6 @@
+import { jwtDecode } from 'jwt-decode';
+import tokenService from '../utils/tokenService';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 class ApiService {
@@ -35,7 +38,7 @@ class ApiService {
 
   // Helper method to get auth headers
   getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
+    const token = tokenService.getAccessToken();
     return {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` })
@@ -44,15 +47,30 @@ class ApiService {
 
   // Helper method to handle API responses
   async handleResponse(response) {
-    const data = await response.json();
+    console.log('API Response Status:', response.status);
+    console.log('API Response OK:', response.ok);
+    console.log('API Response URL:', response.url);
+    
+    let data;
+    try {
+      data = await response.json();
+      console.log('API Response Data:', data);
+    } catch (jsonError) {
+      console.error('Failed to parse JSON response:', jsonError);
+      throw new Error('Invalid JSON response from server');
+    }
     
     if (!response.ok) {
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+      
       // Handle different types of errors
       if (response.status === 401) {
         // Token expired or invalid
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        tokenService.clearAuthTokens();
         // Optionally redirect to login
       }
       throw new Error(data.error || data.message || 'An error occurred');
@@ -82,9 +100,8 @@ class ApiService {
     
     // Store tokens and user data
     if (data.tokens) {
-      localStorage.setItem('access_token', data.tokens.access);
-      localStorage.setItem('refresh_token', data.tokens.refresh);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      tokenService.setTokens(data.tokens.access, data.tokens.refresh);
+      tokenService.setUser(data.user);
     }
     
     return data;
@@ -107,9 +124,8 @@ class ApiService {
     
     // Store tokens and user data
     if (data.tokens) {
-      localStorage.setItem('access_token', data.tokens.access);
-      localStorage.setItem('refresh_token', data.tokens.refresh);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      tokenService.setTokens(data.tokens.access, data.tokens.refresh);
+      tokenService.setUser(data.user);
     }
     
     return data;
@@ -117,7 +133,7 @@ class ApiService {
 
   // Logout user
   async logout() {
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = tokenService.getRefreshToken();
     
     if (refreshToken) {
       try {
@@ -132,9 +148,7 @@ class ApiService {
     }
     
     // Clear local storage regardless of API call success
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    tokenService.clearAuthTokens();
   }
 
   // Get user profile
@@ -149,7 +163,7 @@ class ApiService {
 
   // Refresh access token
   async refreshToken() {
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = tokenService.getRefreshToken();
     
     if (!refreshToken) {
       throw new Error('No refresh token available');
@@ -166,7 +180,7 @@ class ApiService {
     const data = await this.handleResponse(response);
     
     if (data.access) {
-      localStorage.setItem('access_token', data.access);
+      tokenService.setTokens(data.access);
     }
     
     return data;
@@ -174,20 +188,28 @@ class ApiService {
 
   // Check if user is authenticated
   isAuthenticated() {
-    return !!localStorage.getItem('access_token');
+    const token = tokenService.getAccessToken();
+    if (!token) {
+      return false;
+    }
+    
+    if (tokenService.isTokenExpired(token)) {
+      return false;
+    }
+    
+    return true;
   }
 
   // Get current user from localStorage
   getCurrentUser() {
-    const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
+    return tokenService.getUser();
   }
 
   // Book Club API methods
   
   // Get auth headers for FormData (multipart)
   getAuthHeadersForFormData() {
-    const token = localStorage.getItem('access_token');
+    const token = tokenService.getAccessToken();
     return {
       ...(token && { 'Authorization': `Bearer ${token}` })
     };
@@ -204,9 +226,7 @@ class ApiService {
       }
       
       if (response.status === 401) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        tokenService.clearAuthTokens();
       }
       
       const error = new Error(errorData.error || errorData.message || 'An error occurred');

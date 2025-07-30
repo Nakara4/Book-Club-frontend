@@ -27,8 +27,7 @@ const Login = () => {
       const response = await apiService.login(data);
 
       // Store tokens
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
+      // No longer need to set tokens here, it is handled by the api service and authSlice
 
       // Redirect to the originally requested page or dashboard
       const from = location.state?.from?.pathname || '/dashboard';
