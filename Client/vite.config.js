@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [
     react(),
   ],
+  base: '/Book-Club-frontend/',
   css: {
     postcss: './postcss.config.js',
   },
