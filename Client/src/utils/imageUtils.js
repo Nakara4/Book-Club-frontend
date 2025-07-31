@@ -23,7 +23,6 @@ export const getImageUrl = (imageUrl) => {
     return `${BASE_URL}${imageUrl}`;
   }
   
-  // If it's just the filename/path, prepend media URL
   return `${BASE_URL}/media/${imageUrl}`;
 };
 
