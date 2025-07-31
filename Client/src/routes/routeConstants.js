@@ -1,4 +1,3 @@
-// Route constants for the application
 export const ROUTES = {
   // Public routes
   HOME: '/',
