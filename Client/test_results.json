@@ -1,0 +1,61 @@
+{
+  "apiTests": [
+    {
+      "name": "API Root",
+      "url": "http://localhost:8000/api/",
+      "status": 200,
+      "passed": true,
+      "message": "Endpoint accessible"
+    },
+    {
+      "name": "Admin Stats",
+      "url": "http://localhost:8000/api/admin/stats/",
+      "status": 401,
+      "passed": true,
+      "message": "Endpoint accessible"
+    },
+    {
+      "name": "Books Analytics",
+      "url": "http://localhost:8000/api/admin/analytics/books/",
+      "status": 401,
+      "passed": true,
+      "message": "Endpoint accessible"
+    },
+    {
+      "name": "Summaries Analytics",
+      "url": "http://localhost:8000/api/admin/analytics/summaries/",
+      "status": 401,
+      "passed": true,
+      "message": "Endpoint accessible"
+    },
+    {
+      "name": "Active Clubs Analytics",
+      "url": "http://localhost:8000/api/admin/analytics/active-clubs/",
+      "status": 401,
+      "passed": true,
+      "message": "Endpoint accessible"
+    }
+  ],
+  "frontendTests": [
+    {
+      "name": "Frontend Server",
+      "url": "http://localhost:5176",
+      "status": 200,
+      "passed": true,
+      "message": "Frontend accessible"
+    }
+  ],
+  "chartTests": [
+    {
+      "name": "Chart.js Package",
+      "passed": true,
+      "message": "Version ^4.5.0"
+    },
+    {
+      "name": "React Chart.js 2 Package",
+      "passed": true,
+      "message": "Version ^5.3.0"
+    }
+  ],
+  "consoleErrors": []
+}

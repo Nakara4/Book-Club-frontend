@@ -28,6 +28,10 @@ export const ThemeProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+<<<<<<< HEAD
+=======
+  // Apply theme to document
+>>>>>>> main
   useEffect(() => {
     const root = window.document.documentElement;
     const effectiveTheme = theme === 'system' ? systemTheme : theme;

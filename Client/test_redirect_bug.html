@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Club Auth Bug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        button { margin: 5px; padding: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Book Club Authentication Bug Reproduction</h1>
+    
+    <div class="section">
+        <h2>Step 1: Sign in with valid user</h2>
+        <button onclick="login()">Login Test User</button>
+        <div id="loginStatus" class="log"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 2: Check Authentication State</h2>
+        <button onclick="checkAuth()">Check if Authenticated</button>
+        <div id="authStatus" class="log"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 3: Direct Navigation to /bookclubs/my-clubs</h2>
+        <button onclick="testDirectNavigation()">Test Direct URL Access</button>
+        <button onclick="clearTokensAndTest()">Clear Tokens & Test (Should redirect)</button>
+        <div id="navigationStatus" class="log"></div>
+    </div>
+
+    <div class="section">
+        <h2>Step 4: Console Output & Network Monitoring</h2>
+        <div id="consoleOutput" class="log"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const logClass = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            element.innerHTML += `<div class="${logClass}">[${timestamp}] ${message}</div>`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        async function login() {
+            try {
+                log('loginStatus', 'Attempting to login...');
+                
+                const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'testpass123'
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store tokens in localStorage (simulating the app behavior)
+                    localStorage.setItem('access_token', data.tokens.access);
+                    localStorage.setItem('refresh_token', data.tokens.refresh);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    log('loginStatus', `Login successful! User: ${data.user.username}`, 'success');
+                    log('loginStatus', `Access token stored: ${data.tokens.access.substring(0, 50)}...`);
+                } else {
+                    log('loginStatus', `Login failed: ${data.detail || data.message}`, 'error');
+                }
+            } catch (error) {
+                log('loginStatus', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            const user = localStorage.getItem('user');
+            
+            log('authStatus', `Access token exists: ${!!token}`);
+            log('authStatus', `User data exists: ${!!user}`);
+            
+            if (token) {
+                log('authStatus', `Token preview: ${token.substring(0, 50)}...`);
+                // Simulate the isAuthenticated() method from apiService
+                const isAuthenticated = !!localStorage.getItem('access_token');
+                log('authStatus', `isAuthenticated() would return: ${isAuthenticated}`, 'success');
+            } else {
+                log('authStatus', 'No access token found - user would be redirected to login', 'error');
+            }
+        }
+
+        async function testDirectNavigation() {
+            log('navigationStatus', 'Testing direct navigation to /bookclubs/my-clubs...');
+            
+            // Check if authenticated (simulating ProtectedRoute logic)
+            const isAuthenticated = !!localStorage.getItem('access_token');
+            
+            if (!isAuthenticated) {
+                log('navigationStatus', 'ProtectedRoute: User not authenticated - would redirect to /login', 'error');
+                return;
+            }
+            
+            log('navigationStatus', 'ProtectedRoute: User authenticated - proceeding to /bookclubs/my-clubs', 'success');
+            
+            // Try to access the my-clubs endpoint
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`${API_BASE_URL}/bookclubs/my-memberships/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+                
+                log('navigationStatus', `API call to my-memberships: ${response.status} ${response.statusText}`);
+                
+                if (response.status === 401) {
+                    log('navigationStatus', 'Token is invalid/expired - user should be redirected to login', 'error');
+                    // This simulates what handleResponse() does in api.js
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user');
+                } else if (response.ok) {
+                    const data = await response.json();
+                    log('navigationStatus', `Successfully loaded my-clubs data: ${JSON.stringify(data).substring(0, 100)}...`, 'success');
+                } else {
+                    log('navigationStatus', `API error: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log('navigationStatus', `Network error accessing my-clubs: ${error.message}`, 'error');
+            }
+        }
+
+        function clearTokensAndTest() {
+            log('navigationStatus', 'Clearing all tokens to simulate unauthenticated state...');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            
+            testDirectNavigation();
+        }
+
+        // Monitor console and network activity
+        window.addEventListener('load', () => {
+            log('consoleOutput', 'Page loaded - monitoring for authentication flow');
+            
+            // Override console methods to capture output
+            const originalLog = console.log;
+            const originalError = console.error;
+            
+            console.log = function(...args) {
+                log('consoleOutput', `CONSOLE.LOG: ${args.join(' ')}`);
+                originalLog.apply(console, args);
+            };
+            
+            console.error = function(...args) {
+                log('consoleOutput', `CONSOLE.ERROR: ${args.join(' ')}`, 'error');
+                originalError.apply(console, args);
+            };
+        });
+    </script>
+</body>
+</html>
