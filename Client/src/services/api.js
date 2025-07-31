@@ -402,6 +402,71 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Follow a user
+  async followUser(userId) {
+    const response = await fetch(`${this.baseURL}/follow/`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ user_id: userId }),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Unfollow a user
+  async unfollowUser(userId) {
+    const response = await fetch(`${this.baseURL}/unfollow/`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ user_id: userId }),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Get list of users current user is following
+  async getMyFollowing() {
+    const response = await fetch(`${this.baseURL}/my-following/`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Get list of users following current user
+  async getMyFollowers() {
+    const response = await fetch(`${this.baseURL}/my-followers/`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Get list of users a specific user is following
+  async getUserFollowing(userId) {
+    const response = await fetch(`${this.baseURL}/users/${userId}/following/`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Get list of users following a specific user
+  async getUserFollowers(userId) {
+    const response = await fetch(`${this.baseURL}/users/${userId}/followers/`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // Get detailed user profile
+  async getUserProfile(userId) {
+    const response = await fetch(`${this.baseURL}/users/${userId}/`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   // Search book clubs
   async searchBookClubs(query, params = {}) {
     const url = new URL(`${this.baseURL}/bookclubs/search/`);

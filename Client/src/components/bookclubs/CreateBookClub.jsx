@@ -123,9 +123,11 @@ const CreateBookClub = () => {
       }
       
       const response = await bookClubAPI.createBookClub(submitData);
+      console.log('Book club created successfully:', response);
       
-      // Navigate to the created book club's detail page
-      navigate(`/bookclubs/${response.id}`);
+      // Navigate to the book clubs list instead of the detail page
+      // This avoids the undefined ID issue and lets the user see all clubs
+      navigate('/bookclubs');
     } catch (err) {
       console.error('Error creating book club:', err);
       
