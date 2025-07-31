@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../components/pages/Home';
 import Signup from '../components/auth/Signup';
+import Users from '../components/users/Users';
 import Login from '../components/auth/Login';
 import AdminDashboard from '../components/AdminDashboard';
 import ProtectedRoute from '../components/common/ProtectedRoute';
@@ -222,6 +223,9 @@ const AppRouter = () => {
         {/* Redirect old routes to new structure */}
         <Route path="/club/:id" element={<Navigate to="/bookclubs/:id" replace />} />
         <Route path="/clubs" element={<Navigate to="/bookclubs" replace />} />
+
+        {/* Users route */}
+        <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
 
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />

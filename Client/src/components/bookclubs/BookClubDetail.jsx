@@ -17,12 +17,20 @@ const BookClubDetail = () => {
   const fetchBookClubDetails = async () => {
     try {
       setLoading(true);
+      console.log('BookClubDetail: Fetching book club with ID:', id);
+      console.log('BookClubDetail: ID type:', typeof id);
+      
+      if (!id || id === 'undefined') {
+        throw new Error(`Invalid book club ID: ${id}`);
+      }
+      
       const response = await bookClubAPI.getBookClub(id);
       setBookClub(response);
       setError(null);
     } catch (err) {
       setError('Failed to fetch book club details. Please try again.');
       console.error('Error fetching book club:', err);
+      console.error('BookClubDetail: Failed with ID:', id);
     } finally {
       setLoading(false);
     }

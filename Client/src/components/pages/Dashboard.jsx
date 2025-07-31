@@ -1,21 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import UserAvatar from '../common/UserAvatar';
+import { getUserDisplayName, getUserInitials } from '../../utils/userUtils';
+import { selectCurrentUser, selectIsAuthenticated } from '../../features/auth/authSlice';
+import apiService from '../../services/api';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Get user from Redux store or fallback to API service
+  const currentUser = useSelector(selectCurrentUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const fallbackUser = apiService.getCurrentUser();
+  const actualUser = currentUser || fallbackUser;
 
-  // Mock data for demonstration
+  // Get personalized welcome message based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   useEffect(() => {
-    // Simulate API call
+    // Simulate API call with real user data
     setTimeout(() => {
       setDashboardData({
-        user: {
-          name: 'John Doe',
-          email: 'john@example.com',
-          avatar: null,
-          joinedDate: '2024-01-15'
+        user: actualUser || {
+          username: 'user',
+          first_name: '',
+          last_name: '',
+          email: 'user@example.com',
+          date_joined: new Date().toISOString()
         },
         stats: {
           totalBookClubs: 4,
@@ -111,7 +130,7 @@ const Dashboard = () => {
       });
       setLoading(false);
     }, 1000);
-  }, []);
+  }, [actualUser]);
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -189,26 +208,29 @@ const Dashboard = () => {
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Welcome Header */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-primary-900/20 dark:to-secondary-900/20 rounded-lg shadow-md p-6 mb-6 border border-primary-100 dark:border-primary-800">
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
-            {dashboardData.user.avatar ? (
-              <img
-                src={dashboardData.user.avatar}
-                alt={dashboardData.user.name}
-                className="w-16 h-16 rounded-full object-cover"
-              />
-            ) : (
-              <span className="text-gray-600 font-medium text-lg">
-                {getInitials(dashboardData.user.name)}
-              </span>
-            )}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Welcome back, {dashboardData.user.name.split(' ')[0]}!
+          <UserAvatar 
+            user={dashboardData.user} 
+            size="xl" 
+            colorVariant="gradient"
+            className="flex-shrink-0"
+          />
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent mb-1">
+              {getGreeting()}, {getUserDisplayName(dashboardData.user)}!
             </h1>
-            <p className="text-gray-600">Here's what's happening with your book clubs</p>
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
+              Ready for your next chapter? Here's what's happening with your book clubs
+            </p>
+            {dashboardData.user.date_joined && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Member since {new Date(dashboardData.user.date_joined).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long' 
+                })}
+              </p>
+            )}
           </div>
         </div>
       </div>
