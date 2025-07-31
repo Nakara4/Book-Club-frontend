@@ -41,7 +41,7 @@ const tokenService = {
       }
       return false;
     } catch (e) {
-      // Auto-cleanup invalid tokens
+
       tokenService.clearAuthTokens();
       return true;
     }
