@@ -13,7 +13,7 @@ const BookClubInvite = () => {
 
   // Mock data for demonstration
   useEffect(() => {
-    // Simulate API call to get book club info and generate shareable link
+    
     setTimeout(() => {
       setShareableLink(`https://bookclub.app/invite/${id}/join?token=abc123`);
       setPendingInvites([

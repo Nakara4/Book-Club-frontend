@@ -15,7 +15,7 @@ const BookClubBooks = () => {
     readingEndDate: ''
   });
 
-  // Mock data for demonstration
+  
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
