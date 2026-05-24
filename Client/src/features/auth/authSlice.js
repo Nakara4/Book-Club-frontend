@@ -41,7 +41,7 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await apiService.login(credentials);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -71,7 +71,7 @@ export const refreshToken = createAsyncThunk(
       }
       
       const response = await apiService.refreshToken(refreshToken);
-      return response.data;
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }

@@ -5,9 +5,27 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = this.normalizeBaseURL(API_BASE_URL);
     this.retryCount = 3;
     this.retryDelay = 1000;
+  }
+
+  normalizeBaseURL(baseURL) {
+    if (!baseURL) {
+      throw new Error('VITE_API_BASE_URL is not configured');
+    }
+
+    const trimmed = baseURL.replace(/\/+$/, '');
+
+    if (trimmed.endsWith('/api')) {
+      return trimmed;
+    }
+
+    if (trimmed.endsWith('/api/')) {
+      return trimmed.slice(0, -1);
+    }
+
+    return `${trimmed}/api`;
   }
 
   // Enhanced retry mechanism
@@ -50,43 +68,47 @@ class ApiService {
     console.log('API Response Status:', response.status);
     console.log('API Response OK:', response.ok);
     console.log('API Response URL:', response.url);
-    
-    let data;
-    try {
-      data = await response.json();
-      console.log('API Response Data:', data);
-    } catch (jsonError) {
-      console.error('Failed to parse JSON response:', jsonError);
-      throw new Error('Invalid JSON response from server');
+
+    const responseText = await response.text();
+    let data = null;
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText);
+        console.log('API Response Data:', data);
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        throw new Error(`Invalid JSON response from server (${response.status} ${response.statusText}): ${responseText.slice(0, 200)}`);
+      }
     }
-    
+
     if (!response.ok) {
       console.error('API Error Response:', {
         status: response.status,
         statusText: response.statusText,
         data: data
       });
-      
+
       // Handle different types of errors
       if (response.status === 401) {
         // Token expired or invalid
         tokenService.clearAuthTokens();
         throw new Error('Authentication required. Please log in.');
       }
-      
+
       // Create more specific error messages
       let errorMessage = 'An error occurred';
-      if (data.detail) {
+      if (data && data.detail) {
         errorMessage = data.detail;
-      } else if (data.error) {
+      } else if (data && data.error) {
         errorMessage = data.error;
-      } else if (data.message) {
+      } else if (data && data.message) {
         errorMessage = data.message;
-      } else if (data.non_field_errors) {
-        errorMessage = Array.isArray(data.non_field_errors) 
-          ? data.non_field_errors.join(', ') 
+      } else if (data && data.non_field_errors) {
+        errorMessage = Array.isArray(data.non_field_errors)
+          ? data.non_field_errors.join(', ')
           : data.non_field_errors;
-      } else if (typeof data === 'object') {
+      } else if (data && typeof data === 'object') {
         // Handle field-specific errors
         const fieldErrors = Object.keys(data)
           .filter(key => key !== 'error' && key !== 'message')
@@ -98,15 +120,15 @@ class ApiService {
           errorMessage = fieldErrors.join('; ');
         }
       }
-      
+
       // Include status code in error message for debugging
       if (errorMessage === 'An error occurred') {
         errorMessage = `Server error (${response.status}): ${response.statusText}`;
       }
-      
+
       throw new Error(errorMessage);
     }
-    
+
     return data;
   }
 
